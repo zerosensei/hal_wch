@@ -1,0 +1,38 @@
+# Copyright (c) 2023 zerosensei
+# SPDX-License-Identifier: Apache-2.0
+
+zephyr_library()
+
+# TODO: ifdef?
+zephyr_library_sources(Core/core_riscv.c)
+zephyr_library_sources(Debug/debug.c)
+zephyr_library_sources(Peripheral/src/adc.c)
+zephyr_library_sources(Peripheral/src/bkp.c)
+zephyr_library_sources(Peripheral/src/can.c)
+zephyr_library_sources(Peripheral/src/crc.c)
+zephyr_library_sources(Peripheral/src/dac.c)
+zephyr_library_sources(Peripheral/src/dbgmuc.c)
+zephyr_library_sources(Peripheral/src/dam.c)
+zephyr_library_sources(Peripheral/src/dvp.c)
+zephyr_library_sources(Peripheral/src/eth.c)
+zephyr_library_sources(Peripheral/src/exit.c)
+zephyr_library_sources(Peripheral/src/flash.c)
+zephyr_library_sources(Peripheral/src/fsmc.c)
+zephyr_library_sources(Peripheral/src/gpio.c)
+zephyr_library_sources(Peripheral/src/i2c.c)
+zephyr_library_sources(Peripheral/src/iwdg.c)
+zephyr_library_sources(Peripheral/src/misc.c)
+zephyr_library_sources(Peripheral/src/opa.c)
+zephyr_library_sources(Peripheral/src/pwr.c)
+zephyr_library_sources(Peripheral/src/rcc.c)
+zephyr_library_sources(Peripheral/src/rng.c)
+zephyr_library_sources(Peripheral/src/rtc.c)
+zephyr_library_sources(Peripheral/src/sdio.c)
+zephyr_library_sources(Peripheral/src/spi.c)
+zephyr_library_sources(Peripheral/src/tim.c)
+zephyr_library_sources(Peripheral/src/usart.c)
+zephyr_library_sources(Peripheral/src/wwdg.c)
+
+zephyr_include_directories(Core)
+zephyr_include_directories(Debug)
+zephyr_include_directories(Peripheral/inc)
