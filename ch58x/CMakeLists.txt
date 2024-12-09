@@ -1,7 +1,7 @@
 # Copyright (c) 2023 zerosensei
 # SPDX-License-Identifier: Apache-2.0
 
-zephyr_library()
+zephyr_library_named(hal_ch58x)
 
 # TODO: ifdef?
 zephyr_library_sources(RVMSIS/core_riscv.c)
@@ -31,5 +31,10 @@ zephyr_library_sources(StdPeriphDriver/CH58x_usbhostClass.c)
 zephyr_include_directories(RVMSIS)
 zephyr_include_directories(StdPeriphDriver/inc)
 
-# TODO: ifdef?
-zephyr_link_libraries(ISP583)
+# TODO: kconfig
+# zephyr_link_libraries_ifdef(CONFIG_SOC_FLASH_CH5XX ${CMAKE_CURRENT_SOURCE_DIR}/StdPeriphDriver/libISP583.a)
+zephyr_link_libraries(${CMAKE_CURRENT_SOURCE_DIR}/StdPeriphDriver/libISP583.a)
+
+
+add_subdirectory_ifdef(CONFIG_BT ble)
+

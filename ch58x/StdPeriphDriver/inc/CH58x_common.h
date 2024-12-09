@@ -28,6 +28,8 @@
 #define __HIGH_CODE   __attribute__((section(".highcode")))
 #endif
 
+#define INT_SOFT
+
 #ifndef __INTERRUPT
 #ifdef INT_SOFT
 #define __INTERRUPT   __attribute__((interrupt()))
@@ -46,7 +48,7 @@
 #endif
 
 /**
- * @brief  ÏµÍ³Ö÷ÆµÊ±ÖÓ£¨Hz£©
+ * @brief  ç³»ç»Ÿä¸»é¢‘æ—¶é’Ÿï¼ˆHzï¼‰
  */
 #ifndef	 FREQ_SYS
 #define  FREQ_SYS		60000000
@@ -57,7 +59,7 @@
 #endif
 
 /**
- * @brief  32KÊ±ÖÓ£¨Hz£©
+ * @brief  32Kæ—¶é’Ÿï¼ˆHzï¼‰
  */
 #ifdef CLK_OSC32K
 #if ( CLK_OSC32K == 1 )

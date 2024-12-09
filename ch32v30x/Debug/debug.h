@@ -26,9 +26,9 @@
 #define DEBUG_UART3    3
 
 /* DEBUG UATR Definition */
-#ifndef DEBUG
-#define DEBUG   DEBUG_UART1
-#endif
+// #ifndef DEBUG
+// #define DEBUG   DEBUG_UART1
+// #endif
 
 
 void Delay_Init(void);

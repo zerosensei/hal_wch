@@ -15,9 +15,9 @@
 /*********************************************************************
  * @fn      SetSysClock
  *
- * @brief   ÅäÖÃÏµÍ³ÔËÐÐÊ±ÖÓ
+ * @brief   ï¿½ï¿½ï¿½ï¿½ÏµÍ³ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
  *
- * @param   sc      - ÏµÍ³Ê±ÖÓÔ´Ñ¡Ôñ refer to SYS_CLKTypeDef
+ * @param   sc      - ÏµÍ³Ê±ï¿½ï¿½Ô´Ñ¡ï¿½ï¿½ refer to SYS_CLKTypeDef
  *
  * @return  none
  */
@@ -91,7 +91,7 @@ void SetSysClock(SYS_CLKTypeDef sc)
         sys_safe_access_enable();
         R16_CLK_SYS_CFG |= RB_CLK_SYS_MOD;
     }
-    //¸ü¸ÄFLASH clkµÄÇý¶¯ÄÜÁ¦
+    //ï¿½ï¿½ï¿½ï¿½FLASH clkï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     sys_safe_access_enable();
     R8_PLL_CONFIG |= 1 << 7;
     sys_safe_access_disable();
@@ -100,7 +100,7 @@ void SetSysClock(SYS_CLKTypeDef sc)
 /*********************************************************************
  * @fn      GetSysClock
  *
- * @brief   »ñÈ¡µ±Ç°ÏµÍ³Ê±ÖÓ
+ * @brief   ï¿½ï¿½È¡ï¿½ï¿½Ç°ÏµÍ³Ê±ï¿½ï¿½
  *
  * @param   none
  *
@@ -112,15 +112,15 @@ uint32_t GetSysClock(void)
 
     rev = R16_CLK_SYS_CFG & 0xff;
     if((rev & 0x40) == (0 << 6))
-    { // 32M½øÐÐ·ÖÆµ
+    { // 32Mï¿½ï¿½ï¿½Ð·ï¿½Æµ
         return (32000000 / (rev & 0x1f));
     }
     else if((rev & RB_CLK_SYS_MOD) == (1 << 6))
-    { // PLL½øÐÐ·ÖÆµ
+    { // PLLï¿½ï¿½ï¿½Ð·ï¿½Æµ
         return (480000000 / (rev & 0x1f));
     }
     else
-    { // 32K×öÖ÷Æµ
+    { // 32Kï¿½ï¿½ï¿½ï¿½Æµ
         return (32000);
     }
 }
@@ -128,11 +128,11 @@ uint32_t GetSysClock(void)
 /*********************************************************************
  * @fn      SYS_GetInfoSta
  *
- * @brief   »ñÈ¡µ±Ç°ÏµÍ³ÐÅÏ¢×´Ì¬
+ * @brief   ï¿½ï¿½È¡ï¿½ï¿½Ç°ÏµÍ³ï¿½ï¿½Ï¢×´Ì¬
  *
  * @param   i       - refer to SYS_InfoStaTypeDef
  *
- * @return  ÊÇ·ñ¿ªÆô
+ * @return  ï¿½Ç·ï¿½ï¿½ï¿½
  */
 uint8_t SYS_GetInfoSta(SYS_InfoStaTypeDef i)
 {
@@ -149,7 +149,7 @@ uint8_t SYS_GetInfoSta(SYS_InfoStaTypeDef i)
 /*********************************************************************
  * @fn      SYS_ResetExecute
  *
- * @brief   Ö´ÐÐÏµÍ³Èí¼þ¸´Î»
+ * @brief   Ö´ï¿½ï¿½ÏµÍ³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»
  *
  * @param   none
  *
@@ -167,9 +167,9 @@ void SYS_ResetExecute(void)
 /*********************************************************************
  * @fn      SYS_DisableAllIrq
  *
- * @brief   ¹Ø±ÕËùÓÐÖÐ¶Ï£¬²¢±£Áôµ±Ç°ÖÐ¶ÏÖµ
+ * @brief   ï¿½Ø±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶Ï£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½Ð¶ï¿½Öµ
  *
- * @param   pirqv   - µ±Ç°±£ÁôÖÐ¶ÏÖµ
+ * @param   pirqv   - ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½Öµ
  *
  * @return  none
  */
@@ -183,9 +183,9 @@ void SYS_DisableAllIrq(uint32_t *pirqv)
 /*********************************************************************
  * @fn      SYS_RecoverIrq
  *
- * @brief   »Ö¸´Ö®Ç°¹Ø±ÕµÄÖÐ¶ÏÖµ
+ * @brief   ï¿½Ö¸ï¿½Ö®Ç°ï¿½Ø±Õµï¿½ï¿½Ð¶ï¿½Öµ
  *
- * @param   irq_status  - µ±Ç°±£ÁôÖÐ¶ÏÖµ
+ * @param   irq_status  - ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½Öµ
  *
  * @return  none
  */
@@ -198,11 +198,11 @@ void SYS_RecoverIrq(uint32_t irq_status)
 /*********************************************************************
  * @fn      SYS_GetSysTickCnt
  *
- * @brief   »ñÈ¡µ±Ç°ÏµÍ³(SYSTICK)¼ÆÊýÖµ
+ * @brief   ï¿½ï¿½È¡ï¿½ï¿½Ç°ÏµÍ³(SYSTICK)ï¿½ï¿½ï¿½ï¿½Öµ
  *
  * @param   none
  *
- * @return  µ±Ç°¼ÆÊýÖµ
+ * @return  ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½Öµ
  */
 uint32_t SYS_GetSysTickCnt(void)
 {
@@ -215,9 +215,9 @@ uint32_t SYS_GetSysTickCnt(void)
 /*********************************************************************
  * @fn      WWDG_ITCfg
  *
- * @brief   ¿´ÃÅ¹·¶¨Ê±Æ÷Òç³öÖÐ¶ÏÊ¹ÄÜ
+ * @brief   ï¿½ï¿½ï¿½Å¹ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½Ê¹ï¿½ï¿½
  *
- * @param   s       - Òç³öÊÇ·ñÖÐ¶Ï
+ * @param   s       - ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½Ð¶ï¿½
  *
  * @return  none
  */
@@ -242,9 +242,9 @@ void WWDG_ITCfg(FunctionalState s)
 /*********************************************************************
  * @fn      WWDG_ResetCfg
  *
- * @brief   ¿´ÃÅ¹·¶¨Ê±Æ÷¸´Î»¹¦ÄÜ
+ * @brief   ï¿½ï¿½ï¿½Å¹ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
  *
- * @param   s       - Òç³öÊÇ·ñ¸´Î»
+ * @param   s       - ï¿½ï¿½ï¿½ï¿½Ç·ï¿½Î»
  *
  * @return  none
  */
@@ -269,7 +269,7 @@ void WWDG_ResetCfg(FunctionalState s)
 /*********************************************************************
  * @fn      WWDG_ClearFlag
  *
- * @brief   Çå³ý¿´ÃÅ¹·ÖÐ¶Ï±êÖ¾£¬ÖØÐÂ¼ÓÔØ¼ÆÊýÖµÒ²¿ÉÇå³ý
+ * @brief   ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å¹ï¿½ï¿½Ð¶Ï±ï¿½Ö¾ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½Ø¼ï¿½ï¿½ï¿½ÖµÒ²ï¿½ï¿½ï¿½ï¿½ï¿½
  *
  * @param   none
  *
@@ -285,7 +285,7 @@ void WWDG_ClearFlag(void)
 /*********************************************************************
  * @fn      HardFault_Handler
  *
- * @brief   Ó²¼þ´íÎóÖÐ¶Ï£¬½øÈëºóÖ´ÐÐ¸´Î»£¬¸´Î»ÀàÐÍÎªÉÏµç¸´Î»
+ * @brief   Ó²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶Ï£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½Ð¸ï¿½Î»ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Îªï¿½Ïµç¸´Î»
  *
  * @param   none
  *
@@ -308,9 +308,9 @@ void HardFault_Handler(void)
 /*********************************************************************
  * @fn      mDelayuS
  *
- * @brief   uS ÑÓÊ±
+ * @brief   uS ï¿½ï¿½Ê±
  *
- * @param   t       - Ê±¼ä²ÎÊý
+ * @param   t       - Ê±ï¿½ï¿½ï¿½ï¿½ï¿½
  *
  * @return  none
  */
@@ -352,9 +352,9 @@ void mDelayuS(uint16_t t)
 /*********************************************************************
  * @fn      mDelaymS
  *
- * @brief   mS ÑÓÊ±
+ * @brief   mS ï¿½ï¿½Ê±
  *
- * @param   t       - Ê±¼ä²ÎÊý
+ * @param   t       - Ê±ï¿½ï¿½ï¿½ï¿½ï¿½
  *
  * @return  none
  */
@@ -376,17 +376,17 @@ int _write(int fd, char *buf, int size)
     for(i = 0; i < size; i++)
     {
 #if DEBUG == Debug_UART0
-        while(R8_UART0_TFC == UART_FIFO_SIZE);                  /* µÈ´ýÊý¾Ý·¢ËÍ */
-        R8_UART0_THR = *buf++; /* ·¢ËÍÊý¾Ý */
+        while(R8_UART0_TFC == UART_FIFO_SIZE);                  /* ï¿½È´ï¿½ï¿½ï¿½ï¿½Ý·ï¿½ï¿½ï¿½ */
+        R8_UART0_THR = *buf++; /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 #elif DEBUG == Debug_UART1
-        while(R8_UART1_TFC == UART_FIFO_SIZE);                  /* µÈ´ýÊý¾Ý·¢ËÍ */
-        R8_UART1_THR = *buf++; /* ·¢ËÍÊý¾Ý */
+        while(R8_UART1_TFC == UART_FIFO_SIZE);                  /* ï¿½È´ï¿½ï¿½ï¿½ï¿½Ý·ï¿½ï¿½ï¿½ */
+        R8_UART1_THR = *buf++; /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 #elif DEBUG == Debug_UART2
-        while(R8_UART2_TFC == UART_FIFO_SIZE);                  /* µÈ´ýÊý¾Ý·¢ËÍ */
-        R8_UART2_THR = *buf++; /* ·¢ËÍÊý¾Ý */
+        while(R8_UART2_TFC == UART_FIFO_SIZE);                  /* ï¿½È´ï¿½ï¿½ï¿½ï¿½Ý·ï¿½ï¿½ï¿½ */
+        R8_UART2_THR = *buf++; /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 #elif DEBUG == Debug_UART3       
-        while(R8_UART3_TFC == UART_FIFO_SIZE);                  /* µÈ´ýÊý¾Ý·¢ËÍ */
-        R8_UART3_THR = *buf++; /* ·¢ËÍÊý¾Ý */
+        while(R8_UART3_TFC == UART_FIFO_SIZE);                  /* ï¿½È´ï¿½ï¿½ï¿½ï¿½Ý·ï¿½ï¿½ï¿½ */
+        R8_UART3_THR = *buf++; /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 #endif
     }
     return size;

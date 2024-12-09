@@ -128,7 +128,7 @@ typedef struct
  */
 RV_STATIC_INLINE void __enable_irq()
 {
-  __asm volatile ("csrw 0x800, %0" : : "r" (0x6088) );
+  __asm__ volatile ("csrw 0x800, %0" : : "r" (0x6088) );
 }
 
 /*********************************************************************
@@ -140,7 +140,7 @@ RV_STATIC_INLINE void __enable_irq()
  */
 RV_STATIC_INLINE void __disable_irq()
 {
-  __asm volatile ("csrw 0x800, %0" : : "r" (0x6000) );
+  __asm__ volatile ("csrw 0x800, %0" : : "r" (0x6000) );
 }
 
 /*********************************************************************
@@ -152,7 +152,7 @@ RV_STATIC_INLINE void __disable_irq()
  */
 RV_STATIC_INLINE void __NOP()
 {
-  __asm volatile ("nop");
+  __asm__ volatile ("nop");
 }
 
 /*********************************************************************
@@ -282,7 +282,7 @@ RV_STATIC_INLINE void NVIC_SetPriority(IRQn_Type IRQn, uint8_t priority)
 __attribute__( ( always_inline ) ) RV_STATIC_INLINE void __WFI(void)
 {
   NVIC->SCTLR &= ~(1<<3);	// wfi
-  asm volatile ("wfi");
+  __asm__ volatile ("wfi");
 }
 
 /*********************************************************************
@@ -299,8 +299,8 @@ __attribute__( ( always_inline ) ) RV_STATIC_INLINE void __WFE(void)
   t = NVIC->SCTLR;
   NVIC->SCTLR |= (1<<3)|(1<<5);		// (wfi->wfe)+(__sev)
   NVIC->SCTLR = (NVIC->SCTLR & ~(1<<5)) | ( t & (1<<5));
-  asm volatile ("wfi");
-  asm volatile ("wfi");
+  __asm__ volatile ("wfi");
+  __asm__ volatile ("wfi");
 }
 
 /*********************************************************************
