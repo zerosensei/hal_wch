@@ -7,16 +7,20 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/atomic.h>
+#include <zephyr/random/random.h>  //TODO: 
 #include <zephyr/bluetooth/hci_types.h>
 #include <zephyr/bluetooth/hci_vs.h>
-#include <zephyr/random/random.h>
 #include <soc.h>
 
 #include <zephyr/logging/log.h>
-// LOG_MODULE_REGISTER(wch_hci, CONFIG_WCH_HCI_LOG_LEVEL);
 LOG_MODULE_REGISTER(wch_hci, CONFIG_BT_HCI_DRIVER_LOG_LEVEL);
 
-#include <wch_hci_common.h>
+#include "wch_hci_common.h"
+
+
+#if defined(CONFIG_BT_CONN)
+static uint32_t conn_count;
+#endif
 
 #define DEFAULT_EVENT_MASK           0x1fffffffffff
 #define DEFAULT_EVENT_MASK_PAGE_2    0x0
@@ -32,11 +36,8 @@ static uint64_t le_event_mask = DEFAULT_LE_EVENT_MASK;
  */
 static uint16_t _opcode;
 
-static uint8_t bt_wch_memory_buf[CONFIG_BT_WCH_MEM_POOL_SIZE];
-static K_KERNEL_STACK_DEFINE(wch_bt_main_stack, CONFIG_BT_WCH_STACK_SIZE);
-static struct k_thread wch_main_thread_data;
 
-static wch_bt_host_callback_t host_callback;
+
 
 void *hci_cmd_complete(struct net_buf **buf, uint8_t plen)
 {
@@ -62,7 +63,6 @@ static struct net_buf *cmd_complete_status(uint8_t status)
 	return buf;
 }
 
-
 static int wch_link_control_cmd_handle(uint16_t  ocf, struct net_buf *cmd,
 				   struct net_buf **evt)
 {
@@ -81,7 +81,6 @@ static int wch_link_control_cmd_handle(uint16_t  ocf, struct net_buf *cmd,
 
 	return 0;
 }
-
 
 
 
@@ -120,6 +119,28 @@ static void wch_reset(struct net_buf *buf, struct net_buf **evt)
 #endif
 }
 
+#if defined(CONFIG_BT_CONN)
+static void wch_read_tx_power_level(struct net_buf *buf, struct net_buf **evt)
+{
+	struct bt_hci_cp_read_tx_power_level *cmd = (void *)buf->data;
+	struct bt_hci_rp_read_tx_power_level *rp;
+	uint16_t handle;
+	uint8_t status;
+	uint8_t type;
+
+	handle = sys_le16_to_cpu(cmd->handle);
+	type = cmd->type;
+
+	rp = hci_cmd_complete(evt, sizeof(*rp));
+
+	status = 0;
+    rp->tx_power_level = LL_TX_POWEER_0_DBM; //TODO: get tx power level
+
+	rp->status = status;
+	rp->handle = sys_cpu_to_le16(handle);
+}
+#endif /* CONFIG_BT_CONN */
+
 static int wch_ctrl_bb_cmd_handle(uint16_t  ocf, struct net_buf *cmd,
 			      struct net_buf **evt)
 {
@@ -138,7 +159,7 @@ static int wch_ctrl_bb_cmd_handle(uint16_t  ocf, struct net_buf *cmd,
 
 #if defined(CONFIG_BT_CONN)
 	case BT_OCF(BT_HCI_OP_READ_TX_POWER_LEVEL):
-		read_tx_power_level(cmd, evt);
+		wch_read_tx_power_level(cmd, evt);
 		break;
 #endif /* CONFIG_BT_CONN */
 
@@ -193,7 +214,7 @@ static void wch_read_local_version_info(struct net_buf *buf, struct net_buf **ev
 	rp->hci_revision = sys_cpu_to_le16(0);
 	rp->lmp_version = BT_HCI_VERSION_5_4;
 	rp->manufacturer = sys_cpu_to_le16(0x07D7);
-	rp->lmp_subversion = sys_cpu_to_le16(0x0002);  //TODO
+	rp->lmp_subversion = sys_cpu_to_le16(0x0200);  //TODO
 }
 
 static void wch_read_supported_commands(struct net_buf *buf, struct net_buf **evt)
@@ -212,28 +233,16 @@ static void wch_read_supported_commands(struct net_buf *buf, struct net_buf **ev
 	/* Set Event Mask, and Reset. */
 	rp->commands[5] |= BIT(6) | BIT(7);
 
-#if defined(CONFIG_BT_CTLR_CONN_ISO)
-	/* Read/Write Connection Accept Timeout */
-	rp->commands[7] |= BIT(2) | BIT(3);
-#endif /* CONFIG_BT_CTLR_CONN_ISO */
-
 	/* Read TX Power Level. */
 	rp->commands[10] |= BIT(2);
-
-#if defined(CONFIG_BT_HCI_ACL_FLOW_CONTROL)
-	/* Set FC, Host Buffer Size and Host Num Completed */
-	rp->commands[10] |= BIT(5) | BIT(6) | BIT(7);
-#endif /* CONFIG_BT_HCI_ACL_FLOW_CONTROL */
 
 	/* Read Local Version Info, Read Local Supported Features. */
 	rp->commands[14] |= BIT(3) | BIT(5);
 	/* Read BD ADDR. */
 	rp->commands[15] |= BIT(1);
 
-#if defined(CONFIG_BT_CTLR_CONN_RSSI)
 	/* Read RSSI. */
 	rp->commands[15] |= BIT(5);
-#endif /* CONFIG_BT_CTLR_CONN_RSSI */
 
 	/* Set Event Mask Page 2 */
 	rp->commands[22] |= BIT(2);
@@ -242,12 +251,10 @@ static void wch_read_supported_commands(struct net_buf *buf, struct net_buf **ev
 	 */
 	rp->commands[25] |= BIT(0) | BIT(1) | BIT(2) | BIT(4);
 
-#if defined(CONFIG_BT_CTLR_FILTER_ACCEPT_LIST)
 	/* LE Read FAL Size, LE Clear FAL */
 	rp->commands[26] |= BIT(6) | BIT(7);
 	/* LE Add Dev to FAL, LE Remove Dev from FAL */
 	rp->commands[27] |= BIT(0) | BIT(1);
-#endif /* CONFIG_BT_CTLR_FILTER_ACCEPT_LIST */
 
 	/* LE Encrypt, LE Rand */
 	rp->commands[27] |= BIT(6) | BIT(7);
@@ -260,7 +267,6 @@ static void wch_read_supported_commands(struct net_buf *buf, struct net_buf **ev
 	/* LE Set Scan Response Data, LE Set Adv Enable */
 	rp->commands[26] |= BIT(0) | BIT(1);
 
-#if defined(CONFIG_BT_CTLR_ADV_EXT)
 	/* LE Set Adv Set Random Addr, LE Set Ext Adv Params, LE Set Ext Adv
 	 * Data, LE Set Ext Adv Scan Rsp Data, LE Set Ext Adv Enable, LE Read
 	 * Max Adv Data Len, LE Read Num Supp Adv Sets
@@ -269,46 +275,26 @@ static void wch_read_supported_commands(struct net_buf *buf, struct net_buf **ev
 			    BIT(6) | BIT(7);
 	/* LE Remove Adv Set, LE Clear Adv Sets */
 	rp->commands[37] |= BIT(0) | BIT(1);
-#if defined(CONFIG_BT_CTLR_ADV_PERIODIC)
 	/* LE Set PA Params, LE Set PA Data, LE Set PA Enable */
 	rp->commands[37] |= BIT(2) | BIT(3) | BIT(4);
-#if defined(CONFIG_BT_CTLR_ADV_ISO)
-	/* LE Create BIG, LE Create BIG Test, LE Terminate BIG */
-	rp->commands[42] |= BIT(5) | BIT(6) | BIT(7);
-#endif /* CONFIG_BT_CTLR_ADV_ISO */
-#endif /* CONFIG_BT_CTLR_ADV_PERIODIC */
-#endif /* CONFIG_BT_CTLR_ADV_EXT */
 #endif /* CONFIG_BT_BROADCASTER */
 
 #if defined(CONFIG_BT_OBSERVER)
 	/* LE Set Scan Params, LE Set Scan Enable */
 	rp->commands[26] |= BIT(2) | BIT(3);
 
-#if defined(CONFIG_BT_CTLR_ADV_EXT)
 	/* LE Set Extended Scan Params, LE Set Extended Scan Enable */
 	rp->commands[37] |= BIT(5) | BIT(6);
-#if defined(CONFIG_BT_CTLR_SYNC_PERIODIC)
 	/* LE PA Create Sync, LE PA Create Sync Cancel, LE PA Terminate Sync */
 	rp->commands[38] |= BIT(0) | BIT(1) | BIT(2);
-#if defined(CONFIG_BT_CTLR_SYNC_PERIODIC_ADV_LIST)
 	/* LE PA Add Device to Periodic Advertiser List,
 	 * LE PA Remove Device from Periodic Advertiser List,
 	 * LE Clear Periodic Advertiser List,
 	 * LE Read Periodic Adveritiser List Size
 	 */
 	rp->commands[38] |= BIT(3) | BIT(4) | BIT(5) | BIT(6);
-#endif /* CONFIG_BT_CTLR_SYNC_PERIODIC_ADV_LIST */
-#if defined(CONFIG_BT_CTLR_SYNC_PERIODIC)
 	/* LE Set PA Receive Enable */
 	rp->commands[40] |= BIT(5);
-#endif /* CONFIG_BT_CTLR_SYNC_PERIODIC */
-#if defined(CONFIG_BT_CTLR_SYNC_ISO)
-	/* LE BIG Create Sync, LE BIG Terminate Sync */
-	rp->commands[43] |= BIT(0) | BIT(1);
-#endif /* CONFIG_BT_CTLR_SYNC_ISO */
-#endif /* CONFIG_BT_CTLR_SYNC_PERIODIC */
-#endif /* CONFIG_BT_CTLR_ADV_EXT */
-
 #endif /* CONFIG_BT_OBSERVER */
 
 #if defined(CONFIG_BT_CONN)
@@ -385,58 +371,28 @@ static void wch_read_supported_commands(struct net_buf *buf, struct net_buf **ev
 #endif /* CONFIG_BT_CTLR_SCA_UPDATE */
 #endif /* CONFIG_BT_CONN */
 
-#if defined(CONFIG_BT_CTLR_DTM_HCI)
 	/* LE RX Test, LE TX Test, LE Test End */
 	rp->commands[28] |= BIT(4) | BIT(5) | BIT(6);
 	/* LE Enhanced RX Test. */
 	rp->commands[35] |= BIT(7);
 	/* LE Enhanced TX Test. */
 	rp->commands[36] |= BIT(0);
-#if defined(CONFIG_BT_CTLR_DTM_HCI_RX_V3)
 	rp->commands[39] |= BIT(3);
-#endif /* CONFIG_BT_CTLR_DTM_HCI_RX_V3 */
 
-#if defined(CONFIG_BT_CTLR_DTM_HCI_TX_V3)
 	rp->commands[39] |= BIT(4);
-#endif
 
-#if defined(CONFIG_BT_CTLR_DTM_HCI_TX_V4)
-	rp->commands[45] |= BIT(0);
-#endif
-#endif /* CONFIG_BT_CTLR_DTM_HCI */
-
-#if defined(CONFIG_BT_CTLR_PRIVACY)
 	/* LE resolving list commands, LE Read Peer RPA */
 	rp->commands[34] |= BIT(3) | BIT(4) | BIT(5) | BIT(6) | BIT(7);
 	/* LE Read Local RPA, LE Set AR Enable, Set RPA Timeout */
 	rp->commands[35] |= BIT(0) | BIT(1) | BIT(2);
 	/* LE Set Privacy Mode */
 	rp->commands[39] |= BIT(2);
-#endif /* CONFIG_BT_CTLR_PRIVACY */
-
-
-#if defined(CONFIG_BT_HCI_RAW) && defined(CONFIG_BT_TINYCRYPT_ECC)
-	bt_hci_ecc_supported_commands(rp->commands);
-#endif /* CONFIG_BT_HCI_RAW && CONFIG_BT_TINYCRYPT_ECC */
 
 	/* LE Read TX Power. */
 	rp->commands[38] |= BIT(7);
 
-#if defined(CONFIG_BT_CTLR_ADV_ISO) || defined(CONFIG_BT_CTLR_CONN_ISO)
-	/* LE Read Buffer Size v2, LE Read ISO TX Sync */
-	rp->commands[41] |= BIT(5) | BIT(6);
-	/* LE ISO Transmit Test */
-	rp->commands[43] |= BIT(5);
-#endif /* CONFIG_BT_CTLR_ADV_ISO || CONFIG_BT_CTLR_CONN_ISO */
-
-
-
-#if defined(CONFIG_BT_CTLR_SET_HOST_FEATURE)
 	/* LE Set Host Feature */
 	rp->commands[44] |= BIT(1);
-#endif /* CONFIG_BT_CTLR_SET_HOST_FEATURE */
-
-
 }
 
 static void wch_read_local_features(struct net_buf *buf, struct net_buf **evt)
@@ -663,7 +619,6 @@ static void wch_le_set_adv_param(struct net_buf *buf, struct net_buf **evt)
 	*evt = cmd_complete_status(status);
 }
 
-
 static void wch_le_read_adv_chan_tx_power(struct net_buf *buf, 
         struct net_buf **evt)
 {
@@ -749,6 +704,43 @@ static void wch_le_set_scan_enable(struct net_buf *buf, struct net_buf **evt)
 
 #endif /* CONFIG_BT_CENTRAL */
 
+#if defined(CONFIG_BT_CONN)
+
+
+static void wch_le_conn_update(struct net_buf *buf, struct net_buf **evt)
+{
+	struct hci_cp_le_conn_update *cmd = (void *)buf->data;
+	uint16_t supervision_timeout;
+	uint16_t conn_interval_min;
+	uint16_t conn_interval_max;
+	uint16_t conn_latency;
+	uint16_t handle;
+	uint8_t status;
+
+	handle = sys_le16_to_cpu(cmd->handle);
+	conn_interval_min = sys_le16_to_cpu(cmd->conn_interval_min);
+	conn_interval_max = sys_le16_to_cpu(cmd->conn_interval_max);
+	conn_latency = sys_le16_to_cpu(cmd->conn_latency);
+	supervision_timeout = sys_le16_to_cpu(cmd->supervision_timeout);
+
+#if defined(CONFIG_BT_CENTRAL)
+	status = GAPRole_UpdateLink(handle, conn_interval_min, conn_interval_max,
+                conn_latency, supervision_timeout);
+#endif
+
+#if defined(CONFIG_BT_PERIPHERAL)
+    status = GAPRole_PeripheralConnParamUpdateReq(handle,conn_interval_min, 
+                conn_interval_max, conn_latency, supervision_timeout, 
+                0xFF);
+#endif
+
+	*evt = cmd_status(status);
+}
+
+
+#endif /* CONFIG_BT_CONN */
+
+
 
 static int wch_controller_cmd_handle(uint16_t ocf, struct net_buf *cmd,
                         struct net_buf **evt, void **node_rx)
@@ -769,9 +761,6 @@ static int wch_controller_cmd_handle(uint16_t ocf, struct net_buf *cmd,
 	case BT_OCF(BT_HCI_OP_LE_SET_RANDOM_ADDRESS):
 		wch_le_set_random_address(cmd, evt);
 		break;
-
-	// case BT_OCF(BT_HCI_OP_LE_ENCRYPT):
-	// 	break;
 
 	case BT_OCF(BT_HCI_OP_LE_RAND):
 		wch_le_rand(cmd, evt);
@@ -814,7 +803,7 @@ static int wch_controller_cmd_handle(uint16_t ocf, struct net_buf *cmd,
 #endif /* CONFIG_BT_OBSERVER */
 
 #if defined(CONFIG_BT_CENTRAL)
-	case BT_OCF(BT_HCI_OP_LE_CREATE_CONN):
+	case BT_OCF(BT_HCI_OP_LE_CREATE_CONNBT_HCI_OP_LE_CREATE_CONN):
 		le_create_connection(cmd, evt);
 		break;
 
@@ -826,6 +815,28 @@ static int wch_controller_cmd_handle(uint16_t ocf, struct net_buf *cmd,
 		le_set_host_chan_classif(cmd, evt);
 		break;
 #endif /* CONFIG_BT_CENTRAL */
+
+#if defined(CONFIG_BT_PERIPHERAL)
+    //Nothing
+#endif /* CONFIG_BT_PERIPHERAL */
+
+#if defined(CONFIG_BT_CONN)
+	// case BT_OCF(BT_HCI_OP_LE_READ_CHAN_MAP):
+	// 	le_read_chan_map(cmd, evt);
+	// 	break;
+
+#if defined(CONFIG_BT_CENTRAL)
+	case BT_OCF(BT_HCI_OP_LE_READ_REMOTE_FEATURES):
+		// le_read_remote_features(cmd, evt);
+		break;
+#endif /* CONFIG_BT_CENTRAL */
+
+	case BT_OCF(BT_HCI_OP_LE_CONN_UPDATE):
+		wch_le_conn_update(cmd, evt);
+		break;
+
+#endif /* CONFIG_BT_CONN */
+
 
     default:
 		return -EINVAL;  
@@ -890,126 +901,6 @@ static struct net_buf *wch_hci_cmd_handle(struct net_buf *cmd, void **node_rx)
 	return evt;
 }
 
-#define SLEEP_RTC_MIN_TIME                  k_us_to_ticks_ceil32(3000)
-#define SLEEP_RTC_MAX_TIME                	\
-				(	(0xa8c00000U) - \
-					k_ms_to_ticks_ceil32(MSEC_PER_SEC * SEC_PER_MIN * MIN_PER_HOUR))
-
-__ramfunc static uint32_t wch_bt_idle(uint32_t time)
-{
-
-	return 0;
-
-	uint32_t current_time, sleep_time;
-    
-	current_time = RTC_GetCycle32k();
-
-    if (time < current_time) {
-        sleep_time = time + (0xa8c00000U - current_time);
-    } else {
-        sleep_time = time - current_time;
-    }
-
-    if ((sleep_time < SLEEP_RTC_MIN_TIME) ||
-        (sleep_time > SLEEP_RTC_MAX_TIME)) {
-
-		// LOG_DBG("error time______\n");
-		// LOG_DBG("sleep time: %#x\n", sleep_time);
-		// LOG_DBG("current_time: %d\n", current_time);
-		// LOG_DBG("time: %d\n", time);
-		// LOG_DBG("PASS: %d", (int) (current_time - time));
-		// printf("%d\n", (int) (current_time - time));
-        return 2;
-    }
-
-	// LOG_DBG("slp %d", sleep_time);
-	// printk("slp %d\n", sleep_time);
-	// printf("*\n");
-
-    // k_sleep(Z_TIMEOUT_TICKS(sleep_time/*  - 200 */));
-    k_sleep(Z_TIMEOUT_TICKS(sleep_time));
-
-
-    return 0;
-}
-
-
-static int wch_ble_lib_init(void)
-{
-    bleConfig_t cfg;
-    if(tmos_memcmp(VER_LIB, VER_FILE, strlen(VER_FILE)) == FALSE)
-    {
-        LOG_ERR("head file error...\n");
-        return -1;
-    }
-
-    tmos_memset(&cfg, 0, sizeof(bleConfig_t));
-    cfg.MEMAddr = (uint32_t) bt_wch_memory_buf;
-    cfg.MEMLen = (uint32_t) sizeof(bt_wch_memory_buf);
-    cfg.BufMaxLen = 
-            MAX(CONFIG_BT_BUF_ACL_TX_SIZE, CONFIG_BT_BUF_ACL_RX_SIZE);
-    cfg.BufNumber = CONFIG_BT_BUF_ACL_RX_COUNT + CONFIG_BT_BUF_ACL_TX_COUNT;
-#if defined (CONFIG_BT_CONN)
-    cfg.TxNumEvent = CONFIG_BT_CONN_TX_MAX;
-    cfg.ConnectNumber = CONFIG_BT_MAX_CONN & BIT_MASK(2);
-#endif /* CONFIG_BT_CONN */
-    cfg.TxPower = (uint32_t)LL_TX_POWEER_0_DBM; //TODO: 
-#if(defined(BLE_SNV)) && (BLE_SNV == TRUE)
-    if((BLE_SNV_ADDR + BLE_SNV_BLOCK * BLE_SNV_NUM) > (0x78000 - FLASH_ROM_MAX_SIZE))
-    {
-        PRINT("SNV config error...\n");
-        while(1);
-    }
-    cfg.SNVAddr = (uint32_t)BLE_SNV_ADDR;
-    cfg.SNVBlock = (uint32_t)BLE_SNV_BLOCK;
-    cfg.SNVNum = (uint32_t)BLE_SNV_NUM;
-    cfg.readFlashCB = Lib_Read_Flash;
-    cfg.writeFlashCB = Lib_Write_Flash;
-#endif
-// #if(CLK_OSC32K)
-    cfg.SelRTCClock = 1; //TODO: 
-    cfg.SelRTCClock |= 0x80;
-// #endif
-    cfg.srandCB = sys_rand32_get;
-#if(defined TEM_SAMPLE) && (TEM_SAMPLE == TRUE)
-    cfg.tsCB = HAL_GetInterTempValue; // 根据温度变化校准RF和内部RC( 大于7摄氏度 )
-  #if(CLK_OSC32K)
-    cfg.rcCB = Lib_Calibration_LSI; // 内部32K时钟校准
-  #endif
-#endif
-// #if(defined(HAL_SLEEP)) && (HAL_SLEEP == TRUE)
-    cfg.WakeUpTime = 0;//k_us_to_ticks_ceil32(1400);
-    cfg.sleepCB = wch_bt_idle;
-// #endif
-#if(defined(BLE_MAC)) && (BLE_MAC == TRUE)
-    for(i = 0; i < 6; i++)
-    {
-        cfg.MacAddr[i] = MacAddr[5 - i];
-    }
-#else
-    {
-        uint8_t MacAddr[6];
-        GetMACAddress(MacAddr);
-        for(int i = 0; i < 6; i++)
-        {
-            cfg.MacAddr[i] = MacAddr[i]; // 使用芯片mac地址
-        }
-    }
-#endif
-    if(!cfg.MEMAddr || cfg.MEMLen < 4 * 1024)
-    {
-        return -1;
-    }
-    uint8_t ret = BLE_LibInit(&cfg);
-    if(ret)
-    {
-        LOG_ERR("LIB init error code: %x ...\n", ret);
-        return -1;
-    }
-
-    return TMOS_TimerInit(0);
-}
-
 static int wch_cmd_handle(struct net_buf *buf)
 {
 	struct net_buf *node_rx = NULL;  //controllor fanhui de evt
@@ -1031,6 +922,79 @@ static int wch_cmd_handle(struct net_buf *buf)
 
 	return 0;
 }
+#if defined(CONFIG_BT_CONN)
+static int wch_acl_handle(struct net_buf *buf)
+{
+#if 0
+	struct node_tx *node_tx;
+	struct bt_hci_acl_hdr *acl;
+	struct pdu_data *pdu_data;
+	uint16_t handle;
+	uint8_t flags;
+	uint16_t len;
+
+	if (buf->len < sizeof(*acl)) {
+		LOG_ERR("No HCI ACL header");
+		return -EINVAL;
+	}
+
+	acl = net_buf_pull_mem(buf, sizeof(*acl));
+	len = sys_le16_to_cpu(acl->len);
+	handle = sys_le16_to_cpu(acl->handle);
+
+	if (buf->len < len) {
+		LOG_ERR("Invalid HCI ACL packet length");
+		return -EINVAL;
+	}
+
+	if (len > LL_LENGTH_OCTETS_TX_MAX) {
+		LOG_ERR("Invalid HCI ACL Data length");
+		return -EINVAL;
+	}
+
+	/* assigning flags first because handle will be overwritten */
+	flags = bt_acl_flags(handle);
+	handle = bt_acl_handle(handle);
+
+	node_tx = ll_tx_mem_acquire();
+	if (!node_tx) {
+		LOG_ERR("Tx Buffer Overflow");
+		data_buf_overflow(evt, BT_OVERFLOW_LINK_ACL);
+		return -ENOBUFS;
+	}
+
+	pdu_data = (void *)node_tx->pdu;
+
+	if (bt_acl_flags_bc(flags) != BT_ACL_POINT_TO_POINT) {
+		return -EINVAL;
+	}
+
+	switch (bt_acl_flags_pb(flags)) {
+	case BT_ACL_START_NO_FLUSH:
+		pdu_data->ll_id = PDU_DATA_LLID_DATA_START;
+		break;
+	case BT_ACL_CONT:
+		pdu_data->ll_id = PDU_DATA_LLID_DATA_CONTINUE;
+		break;
+	default:
+		/* BT_ACL_START and BT_ACL_COMPLETE not allowed on LE-U
+		 * from Host to Controller
+		 */
+		return -EINVAL;
+	}
+
+	pdu_data->len = len;
+	memcpy(&pdu_data->lldata[0], buf->data, len);
+
+	if (ll_tx_mem_enqueue(handle, node_tx)) {
+		LOG_ERR("Invalid Tx Enqueue");
+		ll_tx_mem_release(node_tx);
+		return -EINVAL;
+	}
+#endif
+	return 0;
+}
+#endif /* CONFIG_BT_CONN */
 
 int wch_bt_host_send(struct net_buf *buf)
 {
@@ -1046,7 +1010,7 @@ int wch_bt_host_send(struct net_buf *buf)
 	switch (type) {
 #if defined(CONFIG_BT_CONN)
 	case BT_BUF_ACL_OUT:
-		ret = wch_acl_handle(buf);
+		ret = wch_acl_handle(buf); //TODO: 
 		break;
 #endif /* CONFIG_BT_CONN */
 	case BT_BUF_CMD:
@@ -1059,89 +1023,4 @@ int wch_bt_host_send(struct net_buf *buf)
 	}
 
 	return ret;
-}
-
-
-void wch_bt_host_callback_register(wch_bt_host_callback_t *wch_host_cb)
-{
-    host_callback.host_send_ready = wch_host_cb->host_send_ready;
-    host_callback.host_rcv_pkt = wch_host_cb->host_rcv_pkt;
-}
-
-void wch_bt_host_rcv_pkt(struct net_buf *buf)
-{
-    if (host_callback.host_rcv_pkt)
-        host_callback.host_rcv_pkt(buf);
-}
-
-static void bt_wch_main_thread(void *p1, void *p2, void *p3)
-{
- 	ARG_UNUSED(p1);
-	ARG_UNUSED(p2);
-	ARG_UNUSED(p3);   
-
-    while (true) {
-        TMOS_SystemProcess();
-    	k_sleep(Z_TIMEOUT_TICKS(1));
-    }
-}
-
-int wch_ble_stack_init(void)
-{
-    int err;
-
-    err = wch_ble_lib_init();
-
-    if (err) {
-        return err;
-    }
-
-	printf("ble stack init success\r\n");
-
-#if defined(CONFIG_BT_OBSERVER)
-    GAPRole_ObserverInit();
-#endif /* CONFIG_BT_OBSERVER */
-
-#if defined(CONFIG_BT_BROADCASTER)
-    GAPRole_BroadcasterInit();
-#endif /* CONFIG_BT_BROADCASTER */
-
-#if defined(CONFIG_BT_PERIPHERAL)
-    GAPRole_PeripheralInit();
-#endif /* CONFIG_BT_PERIPHERAL */
-
-#if defined(CONFIG_BT_CENTRAL)
-    GAPRole_CentralInit();
-#endif /* CONFIG_BT_CENTRAL */
-
-#if defined(CONFIG_BT_OBSERVER)
-    wch_observer_init();
-#endif /* CONFIG_BT_OBSERVER */
-
-#if defined(CONFIG_BT_BROADCASTER)
-	wch_broadcaster_init();
-#endif /* CONFIG_BT_BROADCASTER */
-
-#if defined(CONFIG_BT_PERIPHERAL)
-
-#endif /* CONFIG_BT_PERIPHERAL */
-
-#if defined(CONFIG_BT_CENTRAL)
-#endif /* CONFIG_BT_CENTRAL */
-
-	// extern void BB_IRQHandler(void);
-	// extern void LLE_IRQHandler(void);
-
-
-	IRQ_CONNECT(BLEB_IRQn, 7, BB_IRQLibHandler, 0, 0);
-	IRQ_CONNECT(BLEL_IRQn, 6, LLE_IRQLibHandler, 0, 0);
-
-    k_thread_create(&wch_main_thread_data, wch_bt_main_stack, 
-            K_KERNEL_STACK_SIZEOF(wch_bt_main_stack),
-            bt_wch_main_thread, NULL, NULL, NULL,
-            K_PRIO_COOP(CONFIG_BT_DRIVER_RX_HIGH_PRIO),
-			0, K_NO_WAIT);
-	k_thread_name_set(&wch_main_thread_data, "BT WCH mian");
-
-    return 0;
 }

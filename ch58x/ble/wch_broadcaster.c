@@ -76,20 +76,12 @@ static uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
         return (events ^ SYS_EVENT_MSG);
     }
 
-    if(events & (1<<1)) {
+    if (events & (1<<0)) {
 
-        extern uint32_t test_time;
-        extern uint32_t test_sleep_time;
-        extern uint32_t test_crr_time;
-        // LOG_DBG("curr: %d\n", RTC_GetCycle32k());
-        printf("curr: %d\n", RTC_GetCycle32k());
+        printf("test\n");
 
-
-	    LOG_DBG("%d %d %#x\n", test_time, test_crr_time, test_sleep_time);
-
-        tmos_start_task(Broadcaster_TaskID, (1<<1), MS1_TO_SYSTEM_TIME(200));
-        return (events ^ (1<<1));
-
+        tmos_start_task(Broadcaster_TaskID, (1<<0), MS1_TO_SYSTEM_TIME(1000));
+        return (events ^ (1<<0));
     }
 
     // Discard unknown events
@@ -101,7 +93,7 @@ void wch_broadcaster_init(void)
 {
     Broadcaster_TaskID = TMOS_ProcessEventRegister(Broadcaster_ProcessEvent);
     GAPRole_BroadcasterStartDevice(&Broadcaster_BroadcasterCBs);
-    tmos_start_task(Broadcaster_TaskID, (1<<1), MS1_TO_SYSTEM_TIME(3000));
+    // tmos_start_task(Broadcaster_TaskID, (1<<0), MS1_TO_SYSTEM_TIME(1000));
 }
 
 

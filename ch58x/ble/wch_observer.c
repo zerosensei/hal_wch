@@ -32,8 +32,7 @@ static void ObserverEventCB(gapRoleEvent_t *pEvent)
 
         case GAP_DEVICE_INFO_EVENT:
         {
-            LOG_DBG("dev found\n");
-            printf("dev found\n");
+            LOG_DBG("dev found");
 	        struct net_buf *buf;
             struct bt_hci_evt_le_advertising_report *sep;
             struct bt_hci_evt_le_advertising_info *adv_info;
@@ -68,9 +67,6 @@ static void ObserverEventCB(gapRoleEvent_t *pEvent)
         case GAP_DEVICE_DISCOVERY_EVENT:
         {
             LOG_DBG("Discovery over...");
-            // GAPRole_ObserverStartDiscovery(DEVDISC_MODE_ALL,
-            //                     TRUE,
-            //                     FALSE);
         }
         break;
 
@@ -129,16 +125,6 @@ static uint16_t observer_process_event(uint8_t task_id, uint16_t events)
         return (events ^ SYS_EVENT_MSG);
     }
 
-    if(events & (1<<1)) {
-
-        printf("curr: %d\n", RTC_GetCycle32k());
-
-        tmos_start_task(observer_taskid, (1<<1), MS1_TO_SYSTEM_TIME(1000));
-        return (events ^ (1<<1));
-
-    }
-
-
     // Discard unknown events
     return 0;
 }
@@ -148,11 +134,6 @@ void wch_observer_init(void)
 {
     observer_taskid = TMOS_ProcessEventRegister(observer_process_event);
     GAPRole_ObserverStartDevice((gapRoleObserverCB_t *)&ObserverRoleCB);
-
-
-
-
-    tmos_start_task(observer_taskid, (1<<1), MS1_TO_SYSTEM_TIME(100));
 }
 
 
