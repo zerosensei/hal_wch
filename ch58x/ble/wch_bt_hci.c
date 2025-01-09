@@ -646,7 +646,7 @@ static void wch_le_set_scan_rsp_data(struct net_buf *buf, struct net_buf **evt)
 	struct bt_hci_cp_le_set_scan_rsp_data *cmd = (void *)buf->data;
 	uint8_t status;
 
-    status =GAPRole_SetParameter(GAPROLE_SCAN_RSP_DATA, cmd->len, &cmd->data[0]);
+    status = GAPRole_SetParameter(GAPROLE_SCAN_RSP_DATA, cmd->len, &cmd->data[0]);
 
 	*evt = cmd_complete_status(status);
 }
@@ -689,11 +689,16 @@ static void wch_le_set_scan_param(struct net_buf *buf, struct net_buf **evt)
 
 static void wch_le_set_scan_enable(struct net_buf *buf, struct net_buf **evt)
 {
+	struct bt_hci_cp_le_set_scan_enable *cmd = (void *)buf->data;
 	uint8_t status = 0;
 
-    status = GAP_SetParamValue(TGAP_DISC_SCAN, 0);
-    status |= GAPRole_ObserverStartDiscovery(DEVDISC_MODE_ALL, scan_type, 
+    if (cmd->enable) {
+        status = GAP_SetParamValue(TGAP_DISC_SCAN, 0);
+        status |= GAPRole_CentralStartDiscovery(DEVDISC_MODE_ALL, scan_type, 
                 (uint8_t) (filter_policy & 0x01));
+    } else {
+        status = GAPRole_CentralCancelDiscovery();
+    }
 
 	*evt = cmd_complete_status(status);
 }
@@ -897,6 +902,10 @@ static struct net_buf *wch_hci_cmd_handle(struct net_buf *cmd, void **node_rx)
 	if (err == -EINVAL) {
 		evt = cmd_status(BT_HCI_ERR_UNKNOWN_CMD);
 	}
+
+    if (!err) {
+        wch_bt_idle_clear();
+    }
 
 	return evt;
 }

@@ -15,9 +15,9 @@
 /*********************************************************************
  * @fn      PWR_DCDCCfg
  *
- * @brief   ÆôÓÃÄÚ²¿DC/DCµçÔ´£¬ÓÃÓÚ½ÚÔ¼ÏµÍ³¹¦ºÄ
+ * @brief   ï¿½ï¿½ï¿½ï¿½ï¿½Ú²ï¿½DC/DCï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½ï¿½Ú½ï¿½Ô¼ÏµÍ³ï¿½ï¿½ï¿½ï¿½
  *
- * @param   s       - ÊÇ·ñ´ò¿ªDCDCµçÔ´
+ * @param   s       - ï¿½Ç·ï¿½ï¿½DCDCï¿½ï¿½Ô´
  *
  * @return  none
  */
@@ -30,7 +30,7 @@ void PWR_DCDCCfg(FunctionalState s)
     {
         
         adj &= ~RB_DCDC_CHARGE;
-        plan &= ~(RB_PWR_DCDC_EN | RB_PWR_DCDC_PRE); // ÅÔÂ· DC/DC
+        plan &= ~(RB_PWR_DCDC_EN | RB_PWR_DCDC_PRE); // ï¿½ï¿½Â· DC/DC
         sys_safe_access_enable();
         R16_AUX_POWER_ADJ = adj;
         R16_POWER_PLAN = plan;
@@ -53,9 +53,9 @@ void PWR_DCDCCfg(FunctionalState s)
 /*********************************************************************
  * @fn      PWR_UnitModCfg
  *
- * @brief   ¿É¿Øµ¥ÔªÄ£¿éµÄµçÔ´¿ØÖÆ
+ * @brief   ï¿½É¿Øµï¿½ÔªÄ£ï¿½ï¿½Äµï¿½Ô´ï¿½ï¿½ï¿½ï¿½
  *
- * @param   s       - ÊÇ·ñ´ò¿ªµçÔ´
+ * @param   s       - ï¿½Ç·ï¿½ò¿ªµï¿½Ô´
  * @param   unit    - please refer to unit of controllable power supply
  *
  * @return  none
@@ -65,12 +65,12 @@ void PWR_UnitModCfg(FunctionalState s, uint8_t unit)
     uint8_t pwr_ctrl = R8_HFCK_PWR_CTRL;
     uint8_t ck32k_cfg = R8_CK32K_CONFIG;
 
-    if(s == DISABLE) //¹Ø±Õ
+    if(s == DISABLE) //ï¿½Ø±ï¿½
     {
         pwr_ctrl &= ~(unit & 0x1c);
         ck32k_cfg &= ~(unit & 0x03);
     }
-    else //´ò¿ª
+    else //ï¿½ï¿½
     {
         pwr_ctrl |= (unit & 0x1c);
         ck32k_cfg |= (unit & 0x03);
@@ -85,9 +85,9 @@ void PWR_UnitModCfg(FunctionalState s, uint8_t unit)
 /*********************************************************************
  * @fn      PWR_PeriphClkCfg
  *
- * @brief   ÍâÉèÊ±ÖÓ¿ØÖÆÎ»
+ * @brief   ï¿½ï¿½ï¿½ï¿½Ê±ï¿½Ó¿ï¿½ï¿½ï¿½Î»
  *
- * @param   s       - ÊÇ·ñ´ò¿ª¶ÔÓ¦ÍâÉèÊ±ÖÓ
+ * @param   s       - ï¿½Ç·ï¿½ò¿ª¶ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½
  * @param   perph   - please refer to Peripher CLK control bit define
  *
  * @return  none
@@ -113,14 +113,14 @@ void PWR_PeriphClkCfg(FunctionalState s, uint16_t perph)
 /*********************************************************************
  * @fn      PWR_PeriphWakeUpCfg
  *
- * @brief   Ë¯Ãß»½ÐÑÔ´ÅäÖÃ
+ * @brief   Ë¯ï¿½ß»ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½
  *
- * @param   s       - ÊÇ·ñ´ò¿ª´ËÍâÉèË¯Ãß»½ÐÑ¹¦ÄÜ
- * @param   perph   - ÐèÒªÉèÖÃµÄ»½ÐÑÔ´
- *                    RB_SLP_USB_WAKE   -  USB Îª»½ÐÑÔ´
- *                    RB_SLP_RTC_WAKE   -  RTC Îª»½ÐÑÔ´
- *                    RB_SLP_GPIO_WAKE  -  GPIO Îª»½ÐÑÔ´
- *                    RB_SLP_BAT_WAKE   -  BAT Îª»½ÐÑÔ´
+ * @param   s       - ï¿½Ç·ï¿½ò¿ª´ï¿½ï¿½ï¿½ï¿½ï¿½Ë¯ï¿½ß»ï¿½ï¿½Ñ¹ï¿½ï¿½ï¿½
+ * @param   perph   - ï¿½ï¿½Òªï¿½ï¿½ï¿½ÃµÄ»ï¿½ï¿½ï¿½Ô´
+ *                    RB_SLP_USB_WAKE   -  USB Îªï¿½ï¿½ï¿½ï¿½Ô´
+ *                    RB_SLP_RTC_WAKE   -  RTC Îªï¿½ï¿½ï¿½ï¿½Ô´
+ *                    RB_SLP_GPIO_WAKE  -  GPIO Îªï¿½ï¿½ï¿½ï¿½Ô´
+ *                    RB_SLP_BAT_WAKE   -  BAT Îªï¿½ï¿½ï¿½ï¿½Ô´
  * @param   mode    - refer to WakeUP_ModeypeDef
  *
  * @return  none
@@ -164,9 +164,9 @@ void PWR_PeriphWakeUpCfg(FunctionalState s, uint8_t perph, WakeUP_ModeypeDef mod
 /*********************************************************************
  * @fn      PowerMonitor
  *
- * @brief   µçÔ´¼à¿Ø
+ * @brief   ï¿½ï¿½Ô´ï¿½ï¿½ï¿½
  *
- * @param   s       - ÊÇ·ñ´ò¿ª´Ë¹¦ÄÜ
+ * @param   s       - ï¿½Ç·ï¿½ò¿ª´Ë¹ï¿½ï¿½ï¿½
  * @param   vl      - refer to VolM_LevelypeDef
  *
  * @return  none
@@ -210,7 +210,7 @@ void PowerMonitor(FunctionalState s, VolM_LevelypeDef vl)
 /*********************************************************************
  * @fn      LowPower_Idle
  *
- * @brief   µÍ¹¦ºÄ-IdleÄ£Ê½
+ * @brief   ï¿½Í¹ï¿½ï¿½ï¿½-IdleÄ£Ê½
  *
  * @param   none
  *
@@ -220,7 +220,7 @@ __HIGH_CODE
 void LowPower_Idle(void)
 {
     FLASH_ROM_SW_RESET();
-    R8_FLASH_CTRL = 0x04; //flash¹Ø±Õ
+    R8_FLASH_CTRL = 0x04; //flashï¿½Ø±ï¿½
 
     PFIC->SCTLR &= ~(1 << 2); // sleep
     __WFI();
@@ -231,7 +231,7 @@ void LowPower_Idle(void)
 /*********************************************************************
  * @fn      LowPower_Halt
  *
- * @brief   µÍ¹¦ºÄ-HaltÄ£Ê½£¬´ËµÍ¹¦ºÄÇÐµ½HSI/5Ê±ÖÓÔËÐÐ£¬»½ÐÑºóÐèÒªÓÃ»§×Ô¼ºÖØÐÂÑ¡ÔñÏµÍ³Ê±ÖÓÔ´
+ * @brief   ï¿½Í¹ï¿½ï¿½ï¿½-HaltÄ£Ê½ï¿½ï¿½ï¿½ËµÍ¹ï¿½ï¿½ï¿½ï¿½Ðµï¿½HSI/5Ê±ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½Ñºï¿½ï¿½ï¿½Òªï¿½Ã»ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½ÏµÍ³Ê±ï¿½ï¿½Ô´
  *
  * @param   none
  *
@@ -243,17 +243,17 @@ void LowPower_Halt(void)
     uint8_t x32Kpw, x32Mpw;
 
     FLASH_ROM_SW_RESET();
-    R8_FLASH_CTRL = 0x04; //flash¹Ø±Õ
+    R8_FLASH_CTRL = 0x04; //flashï¿½Ø±ï¿½
     x32Kpw = R8_XT32K_TUNE;
     x32Mpw = R8_XT32M_TUNE;
-    x32Mpw = (x32Mpw & 0xfc) | 0x03; // 150%¶î¶¨µçÁ÷
+    x32Mpw = (x32Mpw & 0xfc) | 0x03; // 150%ï¿½î¶¨ï¿½ï¿½ï¿½ï¿½
     if(R16_RTC_CNT_32K > 0x3fff)
-    {                                    // ³¬¹ý500ms
-        x32Kpw = (x32Kpw & 0xfc) | 0x01; // LSEÇý¶¯µçÁ÷½µµÍµ½¶î¶¨µçÁ÷
+    {                                    // ï¿½ï¿½ï¿½ï¿½500ms
+        x32Kpw = (x32Kpw & 0xfc) | 0x01; // LSEï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Íµï¿½ï¿½î¶¨ï¿½ï¿½ï¿½ï¿½
     }
 
     sys_safe_access_enable();
-    R8_BAT_DET_CTRL = 0; // ¹Ø±ÕµçÑ¹¼à¿Ø
+    R8_BAT_DET_CTRL = 0; // ï¿½Ø±Õµï¿½Ñ¹ï¿½ï¿½ï¿½
     sys_safe_access_enable();
     R8_XT32K_TUNE = x32Kpw;
     R8_XT32M_TUNE = x32Mpw;
@@ -272,37 +272,32 @@ void LowPower_Halt(void)
 
 /*******************************************************************************
 * Function Name  : LowPower_Sleep
-* Description    : µÍ¹¦ºÄ-SleepÄ£Ê½¡£
-                   ×¢Òâµ±Ö÷ÆµÎª80MÊ±£¬Ë¯Ãß»½ÐÑÖÐ¶Ï²»¿Éµ÷ÓÃflashÄÚ´úÂë£¬ÇÒÍË³ö´Ëº¯ÊýÇ°ÐèÒª¼ÓÉÏ30usÑÓ³Ù¡£
+* Description    : ï¿½Í¹ï¿½ï¿½ï¿½-SleepÄ£Ê½ï¿½ï¿½
+                   ×¢ï¿½âµ±ï¿½ï¿½ÆµÎª80MÊ±ï¿½ï¿½Ë¯ï¿½ß»ï¿½ï¿½ï¿½ï¿½Ð¶Ï²ï¿½ï¿½Éµï¿½ï¿½ï¿½flashï¿½Ú´ï¿½ï¿½ë£¬ï¿½ï¿½ï¿½Ë³ï¿½ï¿½Ëºï¿½ï¿½ï¿½Ç°ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½30usï¿½Ó³Ù¡ï¿½
 * Input          : rm:
-                    RB_PWR_RAM2K	-	2K retention SRAM ¹©µç
-                    RB_PWR_RAM30K	-	30K main SRAM ¹©µç
-                    RB_PWR_EXTEND	-	USB ºÍ BLE µ¥Ôª±£ÁôÇøÓò¹©µç
-                    RB_PWR_XROM   - FlashROM ¹©µç
-                   NULL	-	ÒÔÉÏµ¥Ôª¶¼¶Ïµç
+                    RB_PWR_RAM2K	-	2K retention SRAM ï¿½ï¿½ï¿½ï¿½
+                    RB_PWR_RAM30K	-	30K main SRAM ï¿½ï¿½ï¿½ï¿½
+                    RB_PWR_EXTEND	-	USB ï¿½ï¿½ BLE ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ò¹©µï¿½
+                    RB_PWR_XROM   - FlashROM ï¿½ï¿½ï¿½ï¿½
+                   NULL	-	ï¿½ï¿½ï¿½Ïµï¿½Ôªï¿½ï¿½ï¿½Ïµï¿½
 * Return         : None
 *******************************************************************************/
 __HIGH_CODE
 void LowPower_Sleep(uint8_t rm)
 {
     __attribute__((aligned(4))) uint8_t MacAddr[6] = {0};
-    uint8_t x32Kpw, x32Mpw;
+    uint8_t x32Mpw;
     uint16_t power_plan;
 
     GetMACAddress(MacAddr);
 
-    x32Kpw = R8_XT32K_TUNE;
     x32Mpw = R8_XT32M_TUNE;
-    x32Mpw = (x32Mpw & 0xfc) | 0x03; // 150%¶î¶¨µçÁ÷
-    if(R16_RTC_CNT_32K > 0x3fff)
-    {                                    // ³¬¹ý500ms
-        x32Kpw = (x32Kpw & 0xfc) | 0x01; // LSEÇý¶¯µçÁ÷½µµÍµ½¶î¶¨µçÁ÷
-    }
+    x32Mpw = (x32Mpw & 0xfc) | 0x03; // 150%ï¿½î¶¨ï¿½ï¿½ï¿½ï¿½
 
     sys_safe_access_enable();
-    R8_BAT_DET_CTRL = 0; // ¹Ø±ÕµçÑ¹¼à¿Ø
+    R8_BAT_DET_CTRL = 0; // ï¿½Ø±Õµï¿½Ñ¹ï¿½ï¿½ï¿½
+    sys_safe_access_disable();
     sys_safe_access_enable();
-    R8_XT32K_TUNE = x32Kpw;
     R8_XT32M_TUNE = x32Mpw;
     sys_safe_access_disable();
 
@@ -315,12 +310,12 @@ void LowPower_Sleep(uint8_t rm)
     R8_SLP_POWER_CTRL |= RB_RAM_RET_LV;
     R8_PLL_CONFIG |= (1 << 5);
     R16_POWER_PLAN = power_plan;
-
+    sys_safe_access_disable();
     do{
         __WFI();
         __nop();
         __nop();
-        DelayUs(70);
+        DelayUs(300);
 
         {
             __attribute__((aligned(4))) uint8_t mac[6] = {0};
@@ -333,20 +328,25 @@ void LowPower_Sleep(uint8_t rm)
     }while(1);
 
     sys_safe_access_enable();
+    R16_POWER_PLAN &= ~RB_PWR_PLAN_EN;
+    sys_safe_access_disable();
+
+    sys_safe_access_enable();
     R8_PLL_CONFIG &= ~(1 << 5);
     sys_safe_access_disable();
+    DelayUs(20);
 }
 
 /*********************************************************************
  * @fn      LowPower_Shutdown
  *
- * @brief   µÍ¹¦ºÄ-ShutdownÄ£Ê½£¬´ËµÍ¹¦ºÄÇÐµ½HSI/5Ê±ÖÓÔËÐÐ£¬»½ÐÑºóÐèÒªÓÃ»§×Ô¼ºÖØÐÂÑ¡ÔñÏµÍ³Ê±ÖÓÔ´
- *          @note ×¢Òâµ÷ÓÃ´Ëº¯Êý£¬DCDC¹¦ÄÜÇ¿ÖÆ¹Ø±Õ£¬»½ÐÑºó¿ÉÒÔÊÖ¶¯ÔÙ´Î´ò¿ª
+ * @brief   ï¿½Í¹ï¿½ï¿½ï¿½-ShutdownÄ£Ê½ï¿½ï¿½ï¿½ËµÍ¹ï¿½ï¿½ï¿½ï¿½Ðµï¿½HSI/5Ê±ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½Ñºï¿½ï¿½ï¿½Òªï¿½Ã»ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½ÏµÍ³Ê±ï¿½ï¿½Ô´
+ *          @note ×¢ï¿½ï¿½ï¿½ï¿½Ã´Ëºï¿½ï¿½ï¿½ï¿½ï¿½DCDCï¿½ï¿½ï¿½ï¿½Ç¿ï¿½Æ¹Ø±Õ£ï¿½ï¿½ï¿½ï¿½Ñºï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½Ù´Î´ï¿½
  *
- * @param   rm      - ¹©µçÄ£¿éÑ¡Ôñ
- *                    RB_PWR_RAM2K  -   2K retention SRAM ¹©µç
- *                    RB_PWR_RAM16K -   16K main SRAM ¹©µç
- *                    NULL          -   ÒÔÉÏµ¥Ôª¶¼¶Ïµç
+ * @param   rm      - ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½Ñ¡ï¿½ï¿½
+ *                    RB_PWR_RAM2K  -   2K retention SRAM ï¿½ï¿½ï¿½ï¿½
+ *                    RB_PWR_RAM16K -   16K main SRAM ï¿½ï¿½ï¿½ï¿½
+ *                    NULL          -   ï¿½ï¿½ï¿½Ïµï¿½Ôªï¿½ï¿½ï¿½Ïµï¿½
  *
  * @return  none
  */
@@ -358,14 +358,14 @@ void LowPower_Shutdown(uint8_t rm)
     FLASH_ROM_SW_RESET();
     x32Kpw = R8_XT32K_TUNE;
     x32Mpw = R8_XT32M_TUNE;
-    x32Mpw = (x32Mpw & 0xfc) | 0x03; // 150%¶î¶¨µçÁ÷
+    x32Mpw = (x32Mpw & 0xfc) | 0x03; // 150%ï¿½î¶¨ï¿½ï¿½ï¿½ï¿½
     if(R16_RTC_CNT_32K > 0x3fff)
-    {                                    // ³¬¹ý500ms
-        x32Kpw = (x32Kpw & 0xfc) | 0x01; // LSEÇý¶¯µçÁ÷½µµÍµ½¶î¶¨µçÁ÷
+    {                                    // ï¿½ï¿½ï¿½ï¿½500ms
+        x32Kpw = (x32Kpw & 0xfc) | 0x01; // LSEï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Íµï¿½ï¿½î¶¨ï¿½ï¿½ï¿½ï¿½
     }
 
     sys_safe_access_enable();
-    R8_BAT_DET_CTRL = 0; // ¹Ø±ÕµçÑ¹¼à¿Ø
+    R8_BAT_DET_CTRL = 0; // ï¿½Ø±Õµï¿½Ñ¹ï¿½ï¿½ï¿½
     sys_safe_access_enable();
     R8_XT32K_TUNE = x32Kpw;
     R8_XT32M_TUNE = x32Mpw;

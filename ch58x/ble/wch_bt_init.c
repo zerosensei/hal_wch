@@ -25,6 +25,16 @@ LOG_MODULE_REGISTER(wch_init, CONFIG_BT_HCI_DRIVER_LOG_LEVEL);
 #define DT_CLK32K_SCR_NODE \
     DT_PHANDLE_BY_IDX(DT_NODELABEL(clk32k), clock_source, 0)
 
+#if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(lsi)) && \
+        DT_SAME_NODE(DT_CLK32K_SCR_NODE, DT_NODELABEL(lsi))
+#define CLK_32K_SRC_LSI_ENABLE 1
+#elif DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(lse)) && \
+        DT_SAME_NODE(DT_CLK32K_SCR_NODE, DT_NODELABEL(lse))
+#define CLK_32K_SRC_LSE_ENABLE 1
+#else
+#error "32K clock source is not supported"
+#endif
+
 #define DT_CLK32K_FREQ()        \
     DT_PROP(DT_CLK32K_SCR_NODE, clock_frequency)
 
@@ -39,10 +49,10 @@ LOG_MODULE_REGISTER(wch_init, CONFIG_BT_HCI_DRIVER_LOG_LEVEL);
 __attribute__((aligned(4))) static uint8_t bt_wch_memory_buf[CONFIG_BT_WCH_MEM_POOL_SIZE];
 static K_KERNEL_STACK_DEFINE(wch_bt_main_stack, CONFIG_BT_WCH_STACK_SIZE);
 static struct k_thread wch_main_thread_data;
-
+K_SEM_DEFINE(wch_bt_sem, 0, 1);
 static wch_bt_host_callback_t host_callback;
 
-#if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(lsi))
+#if CLK_32K_SRC_LSI_ENABLE
 static uint8_t get_32k_source(void)
 {
     uint8_t ret = 1;
@@ -65,7 +75,7 @@ static void Lib_Calibration_LSI(void)
     Calibration_LSI(Level_64);
 }
 
-#endif /* DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(lsi)) */
+#endif /* CLK_32K_SRC_LSI_ENABLE */
 
 static uint16_t HAL_GetInterTempValue(void)
 {
@@ -101,13 +111,18 @@ uint32_t Lib_Write_Flash(uint32_t addr, uint32_t num, uint32_t *pBuf)
 }
 
 
+void wch_bt_idle_clear(void)
+{
+    k_sem_give(&wch_bt_sem);
+}
+
 __ramfunc static uint32_t wch_bt_idle(uint32_t time)
 {
     static struct k_spinlock idle_lock;
 	uint32_t current_time, sleep_time;
 	k_spinlock_key_t key = k_spin_lock(&idle_lock);
 
-    time = time - 1;
+    // time = time - 1;
 	current_time = RTC_GetCycle32k();
 
     if (time < current_time) {
@@ -126,7 +141,7 @@ __ramfunc static uint32_t wch_bt_idle(uint32_t time)
 
     k_spin_unlock(&idle_lock, key);
 
-    k_sleep(Z_TIMEOUT_US(RTC_TO_US(sleep_time)));
+    k_sem_take(&wch_bt_sem, Z_TIMEOUT_US(RTC_TO_US(sleep_time)));
 
     return 0;
 }
@@ -145,32 +160,30 @@ static int wch_ble_lib_init(void)
     cfg.MEMLen = (uint32_t) sizeof(bt_wch_memory_buf);
     cfg.BufMaxLen = MAX(CONFIG_BT_BUF_ACL_TX_SIZE, CONFIG_BT_BUF_ACL_RX_SIZE);
     cfg.BufNumber = CONFIG_BT_BUF_ACL_RX_COUNT + CONFIG_BT_BUF_ACL_TX_COUNT;
-#if defined (CONFIG_BT_CONN)
-    cfg.TxNumEvent = CONFIG_BT_CONN_TX_MAX;
-    cfg.ConnectNumber = CONFIG_BT_MAX_CONN & BIT_MASK(2);
-#endif /* CONFIG_BT_CONN */
+    cfg.TxNumEvent = 1;  //TODO: 
+    cfg.ConnectNumber = 1 | (1 << 2);//TODO: BT_MAX_CONN
     cfg.TxPower = (uint32_t)LL_TX_POWEER_0_DBM; //TODO: 
 #if(defined(BLE_SNV)) && (BLE_SNV == TRUE)
-    if((BLE_SNV_ADDR + BLE_SNV_BLOCK * BLE_SNV_NUM) >
-             (0x78000 - FLASH_ROM_MAX_SIZE))
-    {
-        LOG_ERR("SNV config error...\n");
-        while(1);
-    }
-    cfg.SNVAddr = (uint32_t)BLE_SNV_ADDR;
-    cfg.SNVBlock = (uint32_t)BLE_SNV_BLOCK;
-    cfg.SNVNum = (uint32_t)BLE_SNV_NUM;
+    // if((BLE_SNV_ADDR + BLE_SNV_BLOCK * BLE_SNV_NUM) >
+    //          (0x78000 - FLASH_ROM_MAX_SIZE))
+    // {
+    //     LOG_ERR("SNV config error...\n");
+    //     while(1);
+    // }
+    cfg.SNVAddr = (uint32_t)(0x77E00-0x070000);
+    cfg.SNVBlock = (uint32_t)(256);
+    cfg.SNVNum = (uint32_t)(1);
     cfg.readFlashCB = Lib_Read_Flash;
     cfg.writeFlashCB = Lib_Write_Flash;
 #endif
-#if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(lsi))
+#if CLK_32K_SRC_LSI_ENABLE
     cfg.SelRTCClock = get_32k_source();
     cfg.rcCB = Lib_Calibration_LSI;
 #endif
     cfg.srandCB = sys_rand32_get;
     cfg.tsCB = HAL_GetInterTempValue;
-    cfg.WakeUpTime = 1;
-    cfg.sleepCB = wch_bt_idle;
+    // cfg.WakeUpTime = 1;
+    // cfg.sleepCB = wch_bt_idle;
     {
         uint8_t MacAddr[6];
         GetMACAddress(MacAddr);
@@ -197,7 +210,6 @@ static int wch_ble_lib_init(void)
     TMOS_TimerInit(0);
 
     return 0;
-
 }
 
 
@@ -222,6 +234,7 @@ static __ramfunc void bt_wch_main_thread(void *p1, void *p2, void *p3)
 
     while (true) {
         TMOS_SystemProcess();
+        k_sleep(Z_TIMEOUT_TICKS(1));
     }
 }
 
@@ -232,42 +245,38 @@ int wch_ble_stack_init(void)
     err = wch_ble_lib_init();
 
     if (err) {
+        LOG_ERR("ble stack init error: %d", err);
         return err;
     }
+#if defined(CONFIG_BT_BROADCASTER) || defined(CONFIG_BT_PERIPHERAL)
+    err = GAPRole_PeripheralInit();
+    if (err) {
+        LOG_ERR("peripheral role init error: %d", err);
+    }
+#endif
 
-	printf("ble stack init success\r\n");
+#if defined(CONFIG_BT_OBSERVER) || defined(CONFIG_BT_CENTRAL)
+    err = GAPRole_CentralInit();
+    if (err) {
+        LOG_ERR("central role init error: %d", err);
+    }
+#endif 
 
-#if defined(CONFIG_BT_OBSERVER)
-    GAPRole_ObserverInit();
-#endif /* CONFIG_BT_OBSERVER */
+#if defined(CONFIG_BT_BROADCASTER) || defined(CONFIG_BT_PERIPHERAL)
+    err = wch_bt_peripheral_init();
+    if (err) {
+        LOG_ERR("peripheral init error: %d", err);
+        return err;
+    }
+#endif
 
-#if defined(CONFIG_BT_BROADCASTER)
-    GAPRole_BroadcasterInit();
-#endif /* CONFIG_BT_BROADCASTER */
-
-#if defined(CONFIG_BT_PERIPHERAL)
-    GAPRole_PeripheralInit();
-#endif /* CONFIG_BT_PERIPHERAL */
-
-#if defined(CONFIG_BT_CENTRAL)
-    GAPRole_CentralInit();
-#endif /* CONFIG_BT_CENTRAL */
-
-#if defined(CONFIG_BT_OBSERVER)
-    wch_observer_init();
-#endif /* CONFIG_BT_OBSERVER */
-
-#if defined(CONFIG_BT_BROADCASTER)
-	wch_broadcaster_init();
-#endif /* CONFIG_BT_BROADCASTER */
-
-#if defined(CONFIG_BT_PERIPHERAL)
-    wch_peripheral_init();
-#endif /* CONFIG_BT_PERIPHERAL */
-
-#if defined(CONFIG_BT_CENTRAL)
-//TODO: 
-#endif /* CONFIG_BT_CENTRAL */
+#if defined(CONFIG_BT_OBSERVER) || defined(CONFIG_BT_CENTRAL)
+    err = wch_bt_central_init();
+    if (err) {
+        LOG_ERR("central init error: %d", err);
+        return err;
+    }
+#endif 
 
     k_thread_create(&wch_main_thread_data, wch_bt_main_stack, 
             K_KERNEL_STACK_SIZEOF(wch_bt_main_stack),
@@ -275,6 +284,8 @@ int wch_ble_stack_init(void)
             K_PRIO_COOP(CONFIG_BT_DRIVER_RX_HIGH_PRIO),
 			0, K_NO_WAIT);
 	k_thread_name_set(&wch_main_thread_data, "BT WCH mian");
+
+	LOG_DBG("ble stack init success");
 
     return 0;
 }
